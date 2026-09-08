@@ -101,9 +101,8 @@ npm run verify-doc-refs     # 源码注释反向死链扫描
 npm run verify-typecheck    # Markdown 代码块真实编译检查
 npm run verify-type-equiv   # 架构核心符号 AST 等价性镜像校验
 
-# 归档与检索
+# 归档操作
 npm run archive-note .agents/notes/implemented/<class>/<filename>.md
-npm run pitfalls [关键词]
 ```
 
 ## 资产参考

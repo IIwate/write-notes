@@ -181,7 +181,6 @@ Agent Notes 是由 Agent 编写并维护的持久化架构决策记录（RFC）�
       pkg.scripts["verify-doc-refs"] = "npx tsx scripts/verify-doc-refs.ts";
       pkg.scripts["verify-typecheck"] = "npx tsx scripts/verify-doc-typecheck.ts";
       pkg.scripts["verify-type-equiv"] = "npx tsx scripts/verify-type-equiv.ts";
-      pkg.scripts["pitfalls"] = "npx tsx scripts/query-pitfalls.ts";
       pkg.scripts["archive-note"] = "npx tsx scripts/archive-agent-note.ts";
 
       if (!pkg.devDependencies["tsx"]) {
@@ -236,7 +235,7 @@ jobs:
 
   console.log("\nInitialization complete. All gates and context rules are transparently embedded in your project.");
   console.log("To verify: npm run verify-notes");
-  console.log("To query pitfalls: npm run pitfalls [keyword]");
+  console.log("To archive: npm run archive-note <path-to-note>");
 }
 
 function showHelp() {

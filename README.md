@@ -78,10 +78,7 @@ npm run verify-doc-refs
 npm run verify-typecheck
 npm run verify-type-equiv
 
-# 3. 命令行避坑检索（提取被否决方案与放弃的备选方案）
-npm run pitfalls [关键词]
-
-# 4. 方案被完全取代时的一键安全归档与哈希封印
+# 3. 方案被完全取代时的一键安全归档与哈希封印
 npm run archive-note .agents/notes/implemented/<class>/<filename>.md
 ```
 
@@ -154,7 +151,7 @@ export interface StorageConfig {
 - `bin/cli.js`：轻量脚手架分发器（`write-notes init`）。
 - `SKILL.md`：供 AI Agent 遵照执行的上下文工作流规范。
 - `templates/`：标准化 Markdown 填空模板（`proposed.md`、`implemented.md`、`rejected.md`）。
-- `scripts/`：分发至宿主项目的全套白盒门禁与避坑检索源码。
+- `scripts/`：分发至宿主项目的全套白盒门禁与归档脚本源码。
 - `references/`：分类界限、行文约束、质量自检、归档机制与门禁技术参考。
 
 ## 许可证

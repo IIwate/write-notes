@@ -44,9 +44,6 @@
 6. **`archive-agent-note`**（`scripts/archive-agent-note.ts`）
    - 方案被新决策完全取代时的一键归档命令：插入归档日期行、移动到 `archived/<class>/`、写入 `manifest.json` SHA-256 校验和并提示修复活跃 Note 中的入站相对引用。
 
-7. **`query-pitfalls`**（`scripts/query-pitfalls.ts`）
-   - 命令行避坑检索：快速扫描全量 `rejected/` 提案以及 `implemented/` 中的放弃备选方案，支持关键词检索并在终端中直接输出。
-
 ## CI 接入建议
 
 在项目 CI 流水线（如 GitHub Actions）中直接配置：
