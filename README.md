@@ -6,6 +6,15 @@
 
 ---
 
+## 设计哲学：白盒自包含与零黑盒依赖
+
+与 DeepSeek Harness 的设计完全对齐：
+- **拒绝全局黑盒运行时**：所有门禁校验逻辑（目录树、格式与时态、源码反向死链、代码编译检查、AST 契约等价）均为透明的 TypeScript 脚本，直接归宿主项目自身所有；
+- **掌控权归项目**：项目维护者和 Agent 可以随时查看、审计并按需微调门禁逻辑，不依赖任何第三方不可见二进制；
+- **一键脚手架分发**：彻底免去手动复制目录与修改配置的繁琐操作，一行命令 `write-notes init` 自动完成全套白盒脚本、模板与 CI 的就绪。
+
+---
+
 ## 核心设计原则
 
 1. 现行法律（Living Law）
@@ -35,39 +44,45 @@ Note 中的 TypeScript 代码片段默认通过真实编译器检查，杜绝示
 
 ---
 
-## 一键初始化与日常使用（CLI）
+## 一键脚手架（在新项目中接入）
 
-类似 Comet 与主流脚手架，在新项目中无需手动复制任何目录或配置文件，一行命令完成全自动配置。
-
-### 1. 在新项目中一键初始化
-
-进入你的新项目根目录，直接执行：
+在新项目根目录下一行命令初始化，自动分发全套白盒资产：
 
 ```bash
 write-notes init
 ```
 
 该命令将在 1 秒内自动完成：
+- 自动部署门禁脚本到项目自身的 `scripts/` 目录（完全白盒透明，可直接审查与定制）；
 - 自动创建 `.agents/notes/{proposed,implemented,rejected,archived}` 目录树与 6 大封闭分类；
 - 自动部署标准化填空模板到 `.agents/notes/templates/`；
-- 自动安装 Skill 规范到 `.agents/skills/write-notes/`（全面支持 Pi、Cursor、Claude Code）；
-- 自动在项目的 `AGENTS.md`（或 `CLAUDE.md`）末尾追加防撞护栏约束规则；
-- 自动在项目的 `package.json`（若存在）中注册 `verify-notes` 等脚本；
+- 自动安装 Skill 规范到 `.agents/skills/write-notes/`（支持 Pi、Cursor、Claude Code）；
+- 自动在项目的 `AGENTS.md`（或 `CLAUDE.md`）追加防撞护栏约束规则；
+- 自动在项目的 `package.json`（若存在）中注册透明的 `npm run verify-notes` 等原生指令；
 - 自动创建 GitHub Actions 自动化门禁流水线（`.github/workflows/verify-notes.yml`）。
 
-### 2. 日常门禁与运维命令
+---
 
-新项目无需拷贝任何门禁脚本，全局 CLI 原生感知并直接运行：
+## 宿主项目原生命令（无全局依赖）
+
+初始化后，项目的所有成员和 CI 环境只需使用项目原生的 npm 指令，无需任何全局 CLI 依赖：
 
 ```bash
 # 1. 运行五重全量门禁（目录树 + 格式与时态 + 源码反向死链 + 代码编译检查 + AST 契约等价）
-write-notes verify
+npm run verify-notes
 
-# 2. 命令行避坑检索（一秒检索被否决方案与已放弃备选）
-write-notes pitfalls [可选关键词]
+# 2. 单项门禁校验
+npm run verify-tree
+npm run verify-format
+npm run verify-doc-refs
+npm run verify-typecheck
+npm run verify-type-equiv
 
-# 3. 方案被完全取代时的一键安全归档与哈希封印
-write-notes archive .agents/notes/implemented/<class>/<filename>.md
+# 3. 命令行避坑检索（提取被否决方案与放弃的备选方案）
+npm run pitfalls [关键词]
+
+# 4. 方案被完全取代时的一键安全归档与哈希封印
+npm run archive-note .agents/notes/implemented/<class>/<filename>.md
 ```
 
 ---
@@ -136,10 +151,10 @@ export interface StorageConfig {
 
 ## 资产说明
 
-- `bin/cli.js`：原生 CLI 工具入口（`write-notes init / verify / pitfalls / archive`）。
+- `bin/cli.js`：轻量脚手架分发器（`write-notes init`）。
 - `SKILL.md`：供 AI Agent 遵照执行的上下文工作流规范。
 - `templates/`：标准化 Markdown 填空模板（`proposed.md`、`implemented.md`、`rejected.md`）。
-- `scripts/`：五重门禁核心与避坑检索实现。
+- `scripts/`：分发至宿主项目的全套白盒门禁与避坑检索源码。
 - `references/`：分类界限、行文约束、质量自检、归档机制与门禁技术参考。
 
 ## 许可证
