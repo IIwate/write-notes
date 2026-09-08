@@ -24,7 +24,8 @@ export const agentNoteRoot = resolveAgentNoteRoot()
 const AGENT_NOTE_LIFECYCLES = ['proposed', 'implemented', 'rejected'] as const
 export const AGENT_NOTE_CLASSES = ['feature', 'bug-fix', 'simplification', 'architecture', 'process', 'testing'] as const
 const AGENT_NOTE_ARCHIVE = 'archived'
-const ROOT_ALLOWLIST = new Set(['AGENTS.md', 'CLAUDE.md'])
+const ROOT_ALLOWLIST_DIRS = new Set(['archived', 'templates'])
+const ROOT_ALLOWLIST = new Set(['AGENTS.md', 'CLAUDE.md', 'README.md'])
 
 export interface AgentNote {
   lifecycle: string
@@ -41,7 +42,7 @@ export function walkAgentNoteTree(): { notes: AgentNote[]; errors: string[] } {
       errors.push('structure: INDEX.md — centralized Agent Note indexes are forbidden; browse the lifecycle/class tree or search the repository')
       continue
     }
-    if (entry.isDirectory() && entry.name !== AGENT_NOTE_ARCHIVE && !(AGENT_NOTE_LIFECYCLES as readonly string[]).includes(entry.name)) {
+    if (entry.isDirectory() && !ROOT_ALLOWLIST_DIRS.has(entry.name) && !(AGENT_NOTE_LIFECYCLES as readonly string[]).includes(entry.name)) {
       errors.push(`structure: ${entry.name}/ — unknown lifecycle folder (allowed: ${AGENT_NOTE_LIFECYCLES.join(', ')}, plus ${AGENT_NOTE_ARCHIVE}/)`)
     }
   }

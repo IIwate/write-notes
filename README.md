@@ -35,6 +35,43 @@ Note 中的 TypeScript 代码片段默认通过真实编译器检查，杜绝示
 
 ---
 
+## 一键初始化与日常使用（CLI）
+
+类似 Comet 与主流脚手架，在新项目中无需手动复制任何目录或配置文件，一行命令完成全自动配置。
+
+### 1. 在新项目中一键初始化
+
+进入你的新项目根目录，直接执行：
+
+```bash
+write-notes init
+```
+
+该命令将在 1 秒内自动完成：
+- 自动创建 `.agents/notes/{proposed,implemented,rejected,archived}` 目录树与 6 大封闭分类；
+- 自动部署标准化填空模板到 `.agents/notes/templates/`；
+- 自动安装 Skill 规范到 `.agents/skills/write-notes/`（全面支持 Pi、Cursor、Claude Code）；
+- 自动在项目的 `AGENTS.md`（或 `CLAUDE.md`）末尾追加防撞护栏约束规则；
+- 自动在项目的 `package.json`（若存在）中注册 `verify-notes` 等脚本；
+- 自动创建 GitHub Actions 自动化门禁流水线（`.github/workflows/verify-notes.yml`）。
+
+### 2. 日常门禁与运维命令
+
+新项目无需拷贝任何门禁脚本，全局 CLI 原生感知并直接运行：
+
+```bash
+# 1. 运行五重全量门禁（目录树 + 格式与时态 + 源码反向死链 + 代码编译检查 + AST 契约等价）
+write-notes verify
+
+# 2. 命令行避坑检索（一秒检索被否决方案与已放弃备选）
+write-notes pitfalls [可选关键词]
+
+# 3. 方案被完全取代时的一键安全归档与哈希封印
+write-notes archive .agents/notes/implemented/<class>/<filename>.md
+```
+
+---
+
 ## 目录结构与生命周期
 
 路径格式：`.agents/notes/{lifecycle}/{class}/yyyy-mm-dd-topic.md`
@@ -97,51 +134,12 @@ export interface StorageConfig {
 
 ---
 
-## 门禁与命令
-
-项目提供基于 TypeScript Compiler API 的五重自动化门禁，杜绝一切格式漂移、死链与代码腐烂：
-
-```bash
-# 执行完整门禁：目录树 + 格式与时态 + 源码反向死链 + 代码块编译 + AST 符号等价
-npm run verify-notes
-
-# 单项校验命令：
-npm run verify-tree         # 1. 目录结构、命名合法性与 Note 间相对链接
-npm run verify-format       # 2. 头三行规范、必选章节、反稻草人与现在时态禁令
-npm run verify-doc-refs     # 3. 源码反向注释死链扫描（// Note: 见 .agents/notes/...）
-npm run verify-typecheck    # 4. Markdown 代码块真实编译检查（跳过请标 ts ignore-check）
-npm run verify-type-equiv   # 5. 核心架构符号 AST 镜像比对（ts type-equiv: Symbol from Path）
-
-# 归档与检索：
-npm run archive-note .agents/notes/implemented/<class>/<filename>.md
-npm run pitfalls [关键词]
-```
-
----
-
-## 集成到宿主项目
-
-将以下规范加入项目根目录的 `AGENTS.md`：
-
-```markdown
-## 架构决策留痕与防撞规范
-
-在进行任何非平凡变更（技术选型、架构重构、接口约定变更、缺陷复盘、特性裁撤）前：
-1. 遵循 .agents/skills/write-notes/SKILL.md。
-2. 既有功能重构优先就地更新对应 Note 的事实部分，严禁只改代码不改 Note，严禁追加流水账。
-3. 新路线先在 proposed/ 编写提案；落地时同提交移入 implemented/ 并改写为现在时。
-4. 必须包含 Alternatives considered 章节，且必须包含维持现状选项与对手方案的最强论据。
-5. 核心代码入口保留反向追溯注释：// Note: 见 .agents/notes/...。
-6. Note 中的代码片段与核心类型声明必须通过 verify-typecheck 与 verify-type-equiv 检查。
-```
-
----
-
 ## 资产说明
 
+- `bin/cli.js`：原生 CLI 工具入口（`write-notes init / verify / pitfalls / archive`）。
 - `SKILL.md`：供 AI Agent 遵照执行的上下文工作流规范。
 - `templates/`：标准化 Markdown 填空模板（`proposed.md`、`implemented.md`、`rejected.md`）。
-- `scripts/`：门禁脚本与避坑检索 CLI。
+- `scripts/`：五重门禁核心与避坑检索实现。
 - `references/`：分类界限、行文约束、质量自检、归档机制与门禁技术参考。
 
 ## 许可证
