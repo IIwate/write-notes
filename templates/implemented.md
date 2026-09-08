@@ -18,6 +18,12 @@ Status: implemented
 
 <已落地事实，全篇使用现在时描述。可插入 Package 拓扑 / 契约 / Schema 等业务自由小节>
 
+<!--
+  代码块说明：
+  1. 普通 ```ts 代码块默认参与编译器真实类型检查，确保示例不腐烂；若为纯伪代码请标注 ```ts ignore-check。
+  2. 核心架构契约可用 ```ts type-equiv: <SymbolName> from <SourceFilePath> 与真实源码进行 AST 镜像对齐。
+-->
+
 ## Alternatives considered
 
 - **<备选 A>** — <先写其最强论据，再写为何被否>
