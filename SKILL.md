@@ -1,6 +1,6 @@
 ---
 name: write-notes
-description: 编写与维护 Agent Notes 架构决策记录。在技术选型、重大重构、缺陷复盘、特性裁撤或架构收敛时记录决策理由、被否决方案并与代码原子提交。包含就地事实维护、源码反向锚点与自动化门禁。
+description: 编写与维护 Agent Notes 架构决策记录。在技术选型、重大重构、缺陷复盘、特性裁撤或架构收敛时记录决策理由、被否决方案并与代码原子提交。包含就地事实维护、源码反向锚点、文档代码块类型编译与 AST 符号等价门禁。
 ---
 
 # Write Notes
@@ -25,10 +25,13 @@ Agent Notes 是面向 AI Agent 与工程团队的架构决策与防撞护栏体�
 4. 强制反稻草人备选
 每篇 Note 必须包含 `## Alternatives considered` 章节。必须包含真实对比过的替代路径，必须包含维持现状或不做的选项，并陈述对手方案的最强论据后再予以否定。
 
-5. 路径即状态与无中心索引
+5. 文档代码块防腐（Typecheck & AST Equiv）
+Note 中的示例代码块默认参与真实编译器类型检查；伪代码或草稿必须显式标记 ````ts ignore-check````。核心契约定义使用 ````ts type-equiv: <Symbol> from <Path>````，由门禁进行 AST 级镜像核对，确保文档中的接口与真实源码 100% 同步。
+
+6. 路径即状态与无中心索引
 目录结构编码状态与类别，禁止使用集中的 `INDEX.md`，通过相对 Markdown 链接进行交叉引用，根除多分支并发合并冲突。
 
-6. 严格时态隔离
+7. 严格时态隔离
 `implemented/` 下严格使用现在时描述已落地的客观事实，严禁出现 `Proposal`、`Plan`、`Acceptance criteria` 等将来时口吻。
 
 ## 目录结构
@@ -88,18 +91,18 @@ Status: <状态>
 在项目根目录下通过脚本执行：
 
 ```bash
-# 全量门禁（目录树、格式与时态、源码反向注释死链）
+# 全量门禁（目录树、格式与时态、源码反向死链、文档代码编译检查、AST 契约等价校验）
 npm run verify-notes
 
 # 单项校验
-npm run verify-tree
-npm run verify-format
-npm run verify-doc-refs
+npm run verify-tree         # 目录树规范与相对链接
+npm run verify-format       # 头块格式、必选章节与时态禁令
+npm run verify-doc-refs     # 源码注释反向死链扫描
+npm run verify-typecheck    # Markdown 代码块真实编译检查
+npm run verify-type-equiv   # 架构核心符号 AST 等价性镜像校验
 
-# 归档已完全取代的 Note
+# 归档与检索
 npm run archive-note .agents/notes/implemented/<class>/<filename>.md
-
-# 命令行避坑查询（快速检索历史上放弃或否决的方案）
 npm run pitfalls [关键词]
 ```
 
@@ -110,3 +113,4 @@ npm run pitfalls [关键词]
 - 行文去思维链：`references/prose-checklist.md`
 - 归档机制：`references/archiving.md`
 - 分类界限：`references/classification.md`
+- 校验脚本详解：`references/verification.md`

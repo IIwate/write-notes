@@ -5,11 +5,17 @@
   "type": "module",
   "description": "Agent Notes 架构决策记录与门禁规范，面向 AI Agent 与工程团队的决策护栏体系",
   "scripts": {
-    "verify-notes": "npx tsx scripts/verify-agent-note-tree.ts && npx tsx scripts/verify-agent-note-format.ts && npx tsx scripts/verify-doc-refs.ts",
+    "verify-notes": "npx tsx scripts/verify-agent-note-tree.ts && npx tsx scripts/verify-agent-note-format.ts && npx tsx scripts/verify-doc-refs.ts && npx tsx scripts/verify-doc-typecheck.ts && npx tsx scripts/verify-type-equiv.ts",
     "verify-tree": "npx tsx scripts/verify-agent-note-tree.ts",
     "verify-format": "npx tsx scripts/verify-agent-note-format.ts",
     "verify-doc-refs": "npx tsx scripts/verify-doc-refs.ts",
+    "verify-typecheck": "npx tsx scripts/verify-doc-typecheck.ts",
+    "verify-type-equiv": "npx tsx scripts/verify-type-equiv.ts",
     "archive-note": "npx tsx scripts/archive-agent-note.ts",
     "pitfalls": "npx tsx scripts/query-pitfalls.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.9",
+    "typescript": "5.8.2"
   }
 }

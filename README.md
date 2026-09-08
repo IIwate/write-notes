@@ -21,13 +21,16 @@
 ```
 门禁工具通过静态分析确保所有反向引用均真实存在，防止事实漂移。
 
-4. 强制反稻草人备选（Anti-Strawman）
+4. 强制代码块真实编译与 AST 契约等价
+Note 中的 TypeScript 代码片段默认通过真实编译器检查，杜绝示例代码过时腐烂；核心接口声明通过 AST 语法树与源码导出逐符号镜像比对，确保架构契约与代码实现 100% 同步。
+
+5. 强制反稻草人备选（Anti-Strawman）
 每篇决策记录必须包含对真实替代方案的对比，必须包含维持现状或不做的选项，并陈述对手方案的最强论据。
 
-5. 路径即状态与无中心索引
+6. 路径即状态与无中心索引
 依靠扁平分类目录与相对 Markdown 链接建立引用关系，禁止集中式 `INDEX.md`，消除多分支并发合并冲突。
 
-6. 严格时态隔离
+7. 严格时态隔离
 已实施记录（`implemented/`）强制采用现在时描述客观交付事实，禁止包含计划性或提案性词汇。
 
 ---
@@ -72,6 +75,14 @@ Status: implemented
 
 会话存储改用 SQLite。启用 WAL 模式保证读写并发，核心表建立 `session_id + timestamp` 联合索引。关键入口由 `StorageEngine` 接口统一定义。
 
+```ts type-equiv: StorageConfig from src/types/storage.ts
+export interface StorageConfig {
+  engine: 'sqlite' | 'memory';
+  wal: boolean;
+  busyTimeoutMs: number;
+}
+```
+
 ## Alternatives considered
 
 - **维持 JSONL + 内存倒排索引**：改动成本最低。但异常断电与进程被杀时存在索引与数据文件撕裂风险，且跨进程共享内存机制过于脆弱。
@@ -88,25 +99,21 @@ Status: implemented
 
 ## 门禁与命令
 
-项目提供基于 TypeScript 的无额外重型依赖检查工具集，适配 CI 流水线及本地预提交校验：
+项目提供基于 TypeScript Compiler API 的五重自动化门禁，杜绝一切格式漂移、死链与代码腐烂：
 
 ```bash
-# 执行完整门禁：目录树规范 + 格式与时态禁令 + 源码注释反向死链检查
+# 执行完整门禁：目录树 + 格式与时态 + 源码反向死链 + 代码块编译 + AST 符号等价
 npm run verify-notes
 
-# 单项校验：目录树与相对链接
-npm run verify-tree
+# 单项校验命令：
+npm run verify-tree         # 1. 目录结构、命名合法性与 Note 间相对链接
+npm run verify-format       # 2. 头三行规范、必选章节、反稻草人与现在时态禁令
+npm run verify-doc-refs     # 3. 源码反向注释死链扫描（// Note: 见 .agents/notes/...）
+npm run verify-typecheck    # 4. Markdown 代码块真实编译检查（跳过请标 ts ignore-check）
+npm run verify-type-equiv   # 5. 核心架构符号 AST 镜像比对（ts type-equiv: Symbol from Path）
 
-# 单项校验：文件格式、必需章节与时态禁令
-npm run verify-format
-
-# 单项校验：源码注释反向死链扫描
-npm run verify-doc-refs
-
-# 归档已完全取代的 Note 并写入 manifest.json 校验和
+# 归档与检索：
 npm run archive-note .agents/notes/implemented/<class>/<filename>.md
-
-# 命令行避坑检索：提取所有被否决提案与已放弃备选方案
 npm run pitfalls [关键词]
 ```
 
@@ -125,6 +132,7 @@ npm run pitfalls [关键词]
 3. 新路线先在 proposed/ 编写提案；落地时同提交移入 implemented/ 并改写为现在时。
 4. 必须包含 Alternatives considered 章节，且必须包含维持现状选项与对手方案的最强论据。
 5. 核心代码入口保留反向追溯注释：// Note: 见 .agents/notes/...。
+6. Note 中的代码片段与核心类型声明必须通过 verify-typecheck 与 verify-type-equiv 检查。
 ```
 
 ---
@@ -134,7 +142,7 @@ npm run pitfalls [关键词]
 - `SKILL.md`：供 AI Agent 遵照执行的上下文工作流规范。
 - `templates/`：标准化 Markdown 填空模板（`proposed.md`、`implemented.md`、`rejected.md`）。
 - `scripts/`：门禁脚本与避坑检索 CLI。
-- `references/`：分类界限、行文约束、质量自检与归档机制参考文档。
+- `references/`：分类界限、行文约束、质量自检、归档机制与门禁技术参考。
 
 ## 许可证
 
