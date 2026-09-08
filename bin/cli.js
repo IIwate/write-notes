@@ -39,16 +39,16 @@ function handleInit(targetDirArg) {
   // 2. Deploy hierarchical AGENTS.md & README.md context files (DeepSeek pattern)
   const notesReadme = `# Agent Notes
 
-本目录存放代码库的架构决策记录与技术提案（RFC）。用于固化代码与常规文档无法承载的决策动机、被否决方案与验证基线。
+本目录存放代码库的架构决策记录与技术提案（RFC）。用于固化代码与常规文档无法承载的决策动机、被否决方案与验证基线。规范契约详见 [SKILL.md](../skills/write-notes/SKILL.md)。
 
 ## 目录布局与生命周期
 
 路径格式严格遵循：\`{lifecycle}/{class}/yyyy-mm-dd-topic.md\`
 
-- \`proposed/\`：实施前的提案与权衡，待评审确认。
-- \`implemented/\`：已落地的决策事实，与代码原子提交并随代码演进就地维护。
-- \`rejected/\`：经讨论否决的方案，永久保留作为防翻案依据。
-- \`archived/\`：已被后续新决策完全取代的历史记录，永久冻结。
+- \`proposed/\`：实施前的提案与权衡，待评审确认。模板见 [templates/proposed.md](templates/proposed.md)。
+- \`implemented/\`：已落地的决策事实，与代码原子提交并就地同步。模板见 [templates/implemented.md](templates/implemented.md)，纪律见 [implemented/AGENTS.md](implemented/AGENTS.md)。
+- \`rejected/\`：经讨论否决的方案，永久保留作为防翻案依据。模板见 [templates/rejected.md](templates/rejected.md)。
+- \`archived/\`：已被后续新决策完全取代的历史记录，永久冻结。约束见 [archived/AGENTS.md](archived/AGENTS.md)。
 
 ## 6 大分类
 
@@ -69,16 +69,19 @@ function handleInit(targetDirArg) {
 
   const notesAgents = `# AGENTS.md — Agent Notes 治理契约
 
-Agent Notes 是由 Agent 编写并维护的持久化架构决策记录（RFC）。
+Agent Notes 是由 Agent 编写并维护的持久化架构决策记录（RFC）。总述见 [README.md](README.md)，工作流契约见 [SKILL.md](../skills/write-notes/SKILL.md)。
 
 ## 核心工作流与取代审计
 
 1. 新增 Note 时的取代审计
 每当新建一篇 Note 时，必须检索活跃树中是否已存在覆盖相同机制或决策的老 Note：
-- 若完全取代老方案：将旧 Note 的有效价值吸收进新 Note，老 Note 移入 \`archived/\` 并在同一提交中修复所有入站相对链接。
+- 若完全取代老方案：将旧 Note 的有效价值吸收进新 Note，老 Note 依据 [archived/AGENTS.md](archived/AGENTS.md) 规则移入 \`archived/\` 并在同一提交中修复所有入站相对链接。
 - 若部分取代老方案：保持两篇 Note 处于活跃状态并在正文中添加双向相对链接。
 
-2. 严禁改动归档文件
+2. 现行法律与事实同步
+对既有决策的维护严格遵循 [implemented/AGENTS.md](implemented/AGENTS.md) 的就地更新纪律。
+
+3. 严禁改动归档文件
 \`archived/\` 下的文件属于永久冻结的历史快照，绝对不要编辑它们，也不要将其视为当前系统的权威真理。
 `;
   writeFileSync(join(targetDir, ".agents", "notes", "AGENTS.md"), notesAgents, "utf8");
