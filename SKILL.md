@@ -112,6 +112,9 @@ npm run verify-type-equiv   # 架构核心符号 AST 等价性镜像校验
 
 # 归档操作
 npm run archive-note .agents/notes/implemented/<class>/<filename>.md
+
+# 无损升级规范与白盒门禁（更新 Skill/模板/脚本，绝不触碰已有 Note 资产）
+npx write-notes update
 ```
 
 技术实现说明见 [verification.md](references/verification.md)。

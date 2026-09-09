@@ -63,6 +63,24 @@ write-notes init
 
 ---
 
+## 无损同步更新（在已接入项目中更新规范与门禁）
+
+当 `write-notes` 的 Skill 规范、门禁脚本或模板发布了新版本，可在项目根目录下安全升级：
+
+```bash
+write-notes update
+```
+
+该命令执行**严格无损升级（Non-destructive）**：
+- 自动升级 `.agents/skills/write-notes/` 下的最新 `SKILL.md` 与参考文档；
+- 自动同步 `scripts/` 下的最新白盒门禁校验脚本与性能优化；
+- 自动同步 `.agents/notes/templates/` 标准化模板；
+- 精准就地升级项目根目录 `AGENTS.md` / `CLAUDE.md` 中的防撞规则区块；
+- 检查并补齐 `package.json` 的门禁 scripts 与 `tsx` / `typescript` 依赖；
+- 🛡️ **严格安全屏障**：已落地的所有 Note 业务记录（`.agents/notes/{proposed,implemented,rejected,archived}/*`）绝对只读保护，100% 完好未触碰。
+
+---
+
 ## 宿主项目原生命令（无全局依赖）
 
 初始化后，项目的所有成员和 CI 环境只需使用项目原生的 npm 指令，无需任何全局 CLI 依赖：

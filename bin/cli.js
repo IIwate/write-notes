@@ -12,7 +12,7 @@
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync, cpSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -22,21 +22,19 @@ const packageRoot = resolve(__dirname, "..");
 const args = process.argv.slice(2);
 const command = args[0] || "help";
 
-function handleInit(targetDirArg) {
-  const targetDir = resolve(process.cwd(), targetDirArg || ".");
-  console.log(`Scaffolding write-notes (white-box architecture) in: ${targetDir}\n`);
+const ruleContent = `
+## 架构决策留痕与防撞规范
 
-  // 1. Create .agents/notes directory tree
-  const lifecycles = ["proposed", "implemented", "rejected", "archived"];
-  const classes = ["feature", "bug-fix", "simplification", "architecture", "process", "testing"];
+在进行任何非平凡变更（技术选型、架构重构、接口约定变更、缺陷复盘、特性裁撤）前：
+1. 遵循 [.agents/skills/write-notes/SKILL.md](.agents/skills/write-notes/SKILL.md)。
+2. 既有模块重构优先就地更新对应 Note 的事实部分，严禁只改代码不改 Note，严禁追加流水账。
+3. 路径分流：单轮闭环交付（随代码同批合入）直接在 \`.agents/notes/implemented/\` 以现在时编写事实；仅跨会话异步评审/分期立项才走 \`.agents/notes/proposed/\`。
+4. 必须包含 \`## Alternatives considered\` 章节，且必须包含维持现状选项与对手方案的最强论据。
+5. 源码反向锚点遵循“单一主宿主”原则（类型优先，流程次之，一 Note 一锚点，禁止全库散弹式打标）。
+6. 代码块分级防护：核心契约用 \`type-equiv\`，普通行为逻辑用标准 ts 编译检查，严禁为凑门禁虚构无意义类型。
+`;
 
-  for (const lc of lifecycles) {
-    for (const cls of classes) {
-      mkdirSync(join(targetDir, ".agents", "notes", lc, cls), { recursive: true });
-    }
-  }
-
-  // 2. Deploy hierarchical AGENTS.md & README.md context files (DeepSeek pattern)
+function deployHierarchicalRules(targetDir) {
   const notesReadme = `# Agent Notes
 
 本目录存放代码库的架构决策记录与技术提案（RFC）。用于固化代码与常规文档无法承载的决策动机、被否决方案与验证基线。规范契约详见 [SKILL.md](../skills/write-notes/SKILL.md)。
@@ -114,16 +112,16 @@ Agent Notes 是由 Agent 编写并维护的持久化架构决策记录（RFC）�
 3. 归档文件已被计算 SHA-256 哈希值并封印于 manifest.json 中，任何未经授权的修改都会直接导致门禁报错。
 `;
   writeFileSync(join(targetDir, ".agents", "notes", "archived", "AGENTS.md"), archivedAgents, "utf8");
-  console.log("Deployed hierarchical context rules: .agents/notes/{AGENTS.md, implemented/AGENTS.md, archived/AGENTS.md}");
+}
 
-  // 3. Deploy templates
+function deployTemplates(targetDir) {
   const templatesSrc = join(packageRoot, "templates");
   const templatesDest = join(targetDir, ".agents", "notes", "templates");
   mkdirSync(templatesDest, { recursive: true });
   cpSync(templatesSrc, templatesDest, { recursive: true });
-  console.log("Deployed templates: .agents/notes/templates/");
+}
 
-  // 4. Deploy skill & references
+function deploySkill(targetDir) {
   const skillDestDir = join(targetDir, ".agents", "skills", "write-notes");
   mkdirSync(skillDestDir, { recursive: true });
   cpSync(join(packageRoot, "SKILL.md"), join(skillDestDir, "SKILL.md"));
@@ -131,73 +129,113 @@ Agent Notes 是由 Agent 编写并维护的持久化架构决策记录（RFC）�
   const refsSrc = join(packageRoot, "references");
   const refsDest = join(skillDestDir, "references");
   cpSync(refsSrc, refsDest, { recursive: true });
-  console.log("Deployed Agent Skill: .agents/skills/write-notes/");
+}
 
-  // 5. Deploy white-box verification scripts directly into project
+function deployScripts(targetDir) {
   const scriptsSrc = join(packageRoot, "scripts");
   const scriptsDest = join(targetDir, "scripts");
   mkdirSync(scriptsDest, { recursive: true });
   cpSync(scriptsSrc, scriptsDest, { recursive: true });
-  console.log("Deployed verification scripts: scripts/ (fully transparent, white-box)");
+}
 
-  // 6. Update or create AGENTS.md / CLAUDE.md in project root
-  const ruleContent = `
-## 架构决策留痕与防撞规范
-
-在进行任何非平凡变更（技术选型、架构重构、接口约定变更、缺陷复盘、特性裁撤）前：
-1. 遵循 [.agents/skills/write-notes/SKILL.md](.agents/skills/write-notes/SKILL.md)。
-2. 既有模块重构优先就地更新对应 Note 的事实部分，严禁只改代码不改 Note，严禁追加流水账。
-3. 路径分流：单轮闭环交付（随代码同批合入）直接在 \`.agents/notes/implemented/\` 以现在时编写事实；仅跨会话异步评审/分期立项才走 \`.agents/notes/proposed/\`。
-4. 必须包含 \`## Alternatives considered\` 章节，且必须包含维持现状选项与对手方案的最强论据。
-5. 源码反向锚点遵循“单一主宿主”原则（类型优先，流程次之，一 Note 一锚点，禁止全库散弹式打标）。
-6. 代码块分级防护：核心契约用 \`type-equiv\`，普通行为逻辑用标准 ts 编译检查，严禁为凑门禁虚构无意义类型。
-`;
-
+function upgradeGuardrailRules(targetDir) {
   const agentsPath = join(targetDir, "AGENTS.md");
   const claudePath = join(targetDir, "CLAUDE.md");
   const targetRuleFile = existsSync(claudePath) && !existsSync(agentsPath) ? claudePath : agentsPath;
+  const fileName = relative(targetDir, targetRuleFile) || basename(targetRuleFile);
 
-  if (existsSync(targetRuleFile)) {
-    const existing = readFileSync(targetRuleFile, "utf8");
-    if (!existing.includes("write-notes")) {
-      writeFileSync(targetRuleFile, existing.trimEnd() + "\n" + ruleContent, "utf8");
-      console.log(`Appended guardrail rules: ${targetRuleFile}`);
-    } else {
-      console.log(`Rules already present: ${targetRuleFile}`);
-    }
-  } else {
+  if (!existsSync(targetRuleFile)) {
     writeFileSync(targetRuleFile, ruleContent.trimStart(), "utf8");
-    console.log(`Created: ${targetRuleFile}`);
+    return { file: fileName, action: "created" };
   }
 
-  // 7. Update package.json (transparent scripts, no blackbox CLI dependencies)
+  const existing = readFileSync(targetRuleFile, "utf8");
+  const sectionRegex = /##\s*架构决策留痕与防撞规范[\s\S]*?(?=(\n##\s+[^\n]+|\n#[^#\n]+|$))/;
+
+  if (sectionRegex.test(existing)) {
+    const updated = existing.replace(sectionRegex, ruleContent.trim() + "\n");
+    writeFileSync(targetRuleFile, updated, "utf8");
+    return { file: fileName, action: "upgraded" };
+  } else if (!existing.includes("write-notes")) {
+    writeFileSync(targetRuleFile, existing.trimEnd() + "\n" + ruleContent, "utf8");
+    return { file: fileName, action: "appended" };
+  } else {
+    // Existing references write-notes but has custom header; append to ensure full coverage
+    writeFileSync(targetRuleFile, existing.trimEnd() + "\n" + ruleContent, "utf8");
+    return { file: fileName, action: "appended" };
+  }
+}
+
+function syncPackageJson(targetDir) {
   const pkgPath = join(targetDir, "package.json");
-  if (existsSync(pkgPath)) {
-    try {
-      const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
-      pkg.scripts = pkg.scripts || {};
-      pkg.devDependencies = pkg.devDependencies || {};
+  if (!existsSync(pkgPath)) return false;
 
-      pkg.scripts["verify-notes"] = "npx tsx scripts/verify-agent-note-tree.ts && npx tsx scripts/verify-agent-note-format.ts && npx tsx scripts/verify-doc-refs.ts && npx tsx scripts/verify-doc-typecheck.ts && npx tsx scripts/verify-type-equiv.ts";
-      pkg.scripts["verify-tree"] = "npx tsx scripts/verify-agent-note-tree.ts";
-      pkg.scripts["verify-format"] = "npx tsx scripts/verify-agent-note-format.ts";
-      pkg.scripts["verify-doc-refs"] = "npx tsx scripts/verify-doc-refs.ts";
-      pkg.scripts["verify-typecheck"] = "npx tsx scripts/verify-doc-typecheck.ts";
-      pkg.scripts["verify-type-equiv"] = "npx tsx scripts/verify-type-equiv.ts";
-      pkg.scripts["archive-note"] = "npx tsx scripts/archive-agent-note.ts";
+  try {
+    const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
+    pkg.scripts = pkg.scripts || {};
+    pkg.devDependencies = pkg.devDependencies || {};
 
-      if (!pkg.devDependencies["tsx"]) {
-        pkg.devDependencies["tsx"] = "^4.19.0";
-      }
-      if (!pkg.devDependencies["typescript"]) {
-        pkg.devDependencies["typescript"] = "^5.8.2";
-      }
+    pkg.scripts["verify-notes"] = "npx tsx scripts/verify-agent-note-tree.ts && npx tsx scripts/verify-agent-note-format.ts && npx tsx scripts/verify-doc-refs.ts && npx tsx scripts/verify-doc-typecheck.ts && npx tsx scripts/verify-type-equiv.ts";
+    pkg.scripts["verify-tree"] = "npx tsx scripts/verify-agent-note-tree.ts";
+    pkg.scripts["verify-format"] = "npx tsx scripts/verify-agent-note-format.ts";
+    pkg.scripts["verify-doc-refs"] = "npx tsx scripts/verify-doc-refs.ts";
+    pkg.scripts["verify-typecheck"] = "npx tsx scripts/verify-doc-typecheck.ts";
+    pkg.scripts["verify-type-equiv"] = "npx tsx scripts/verify-type-equiv.ts";
+    pkg.scripts["archive-note"] = "npx tsx scripts/archive-agent-note.ts";
 
-      writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n", "utf8");
-      console.log("Configured transparent scripts and dependencies: package.json");
-    } catch (e) {
-      console.warn("Notice: could not update package.json automatically");
+    if (!pkg.devDependencies["tsx"]) {
+      pkg.devDependencies["tsx"] = "^4.19.0";
     }
+    if (!pkg.devDependencies["typescript"]) {
+      pkg.devDependencies["typescript"] = "^5.8.2";
+    }
+
+    writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n", "utf8");
+    return true;
+  } catch (e) {
+    console.warn("Notice: could not update package.json automatically");
+    return false;
+  }
+}
+
+function handleInit(targetDirArg) {
+  const targetDir = resolve(process.cwd(), targetDirArg || ".");
+  console.log(`Scaffolding write-notes (white-box architecture) in: ${targetDir}\n`);
+
+  // 1. Create .agents/notes directory tree
+  const lifecycles = ["proposed", "implemented", "rejected", "archived"];
+  const classes = ["feature", "bug-fix", "simplification", "architecture", "process", "testing"];
+
+  for (const lc of lifecycles) {
+    for (const cls of classes) {
+      mkdirSync(join(targetDir, ".agents", "notes", lc, cls), { recursive: true });
+    }
+  }
+
+  // 2. Deploy hierarchical context rules
+  deployHierarchicalRules(targetDir);
+  console.log("Deployed hierarchical context rules: .agents/notes/{AGENTS.md, implemented/AGENTS.md, archived/AGENTS.md}");
+
+  // 3. Deploy templates
+  deployTemplates(targetDir);
+  console.log("Deployed templates: .agents/notes/templates/");
+
+  // 4. Deploy skill & references
+  deploySkill(targetDir);
+  console.log("Deployed Agent Skill: .agents/skills/write-notes/");
+
+  // 5. Deploy white-box verification scripts directly into project
+  deployScripts(targetDir);
+  console.log("Deployed verification scripts: scripts/ (fully transparent, white-box)");
+
+  // 6. Update or create AGENTS.md / CLAUDE.md in project root
+  const ruleResult = upgradeGuardrailRules(targetDir);
+  console.log(`${ruleResult.action === "created" ? "Created" : "Configured"} guardrail rules: ${ruleResult.file}`);
+
+  // 7. Update package.json (transparent scripts, no blackbox CLI dependencies)
+  const pkgUpdated = syncPackageJson(targetDir);
+  if (pkgUpdated) {
+    console.log("Configured transparent scripts and dependencies: package.json");
   }
 
   // 8. Create GitHub Actions CI workflow (directly runs npm run verify-notes)
@@ -238,25 +276,75 @@ jobs:
 
   console.log("\nInitialization complete. All gates and context rules are transparently embedded in your project.");
   console.log("To verify: npm run verify-notes");
+  console.log("To update skill/scripts in future: write-notes update [dir]");
   console.log("To archive: npm run archive-note <path-to-note>");
+}
+
+function handleUpdate(targetDirArg) {
+  const targetDir = resolve(process.cwd(), targetDirArg || ".");
+  const notesDir = join(targetDir, ".agents", "notes");
+  const skillDir = join(targetDir, ".agents", "skills", "write-notes");
+
+  if (!existsSync(notesDir) && !existsSync(skillDir)) {
+    console.error(`Error: write-notes is not initialized in: ${targetDir}`);
+    console.error("Please run `write-notes init [dir]` first to scaffold the initial setup.\n");
+    process.exit(1);
+  }
+
+  console.log(`Updating write-notes assets (non-destructive) in: ${targetDir}\n`);
+
+  // 1. Update templates
+  deployTemplates(targetDir);
+  console.log("✓ Updated templates: .agents/notes/templates/");
+
+  // 2. Update Skill & references
+  deploySkill(targetDir);
+  console.log("✓ Updated Agent Skill & references: .agents/skills/write-notes/");
+
+  // 3. Update white-box verification scripts
+  deployScripts(targetDir);
+  console.log("✓ Updated verification scripts: scripts/ (white-box)");
+
+  // 4. Update hierarchical context rules
+  deployHierarchicalRules(targetDir);
+  console.log("✓ Updated governance rules: .agents/notes/**/{AGENTS.md,README.md}");
+
+  // 5. Upgrade guardrail rules in project root
+  const ruleResult = upgradeGuardrailRules(targetDir);
+  console.log(`✓ Upgraded guardrail rules in: ${ruleResult.file}`);
+
+  // 6. Synchronize package.json scripts and dependencies
+  const pkgUpdated = syncPackageJson(targetDir);
+  if (pkgUpdated) {
+    console.log("✓ Synchronized package.json scripts and dependencies");
+  }
+
+  console.log("\nUpdate complete. All existing Note records (.agents/notes/{proposed,implemented,rejected,archived}/*) remain 100% untouched.");
+  console.log("To verify gates: npm run verify-notes");
 }
 
 function showHelp() {
   console.log(`Usage: write-notes <command> [options]
 
 Commands:
-  init [dir]      Scaffold transparent, white-box write-notes into project (default: .)
-  help, -h        Show this help manual
+  init [dir]        Scaffold transparent, white-box write-notes into project (default: .)
+  update [dir]      Update skill, templates, scripts and rules (leaves existing notes untouched)
+  help, -h          Show this help manual
 
 Examples:
   write-notes init
-  write-notes init ./my-project
+  write-notes update
+  write-notes update ./my-project
 `);
 }
 
 switch (command) {
   case "init":
     handleInit(args[1]);
+    break;
+  case "update":
+  case "upgrade":
+    handleUpdate(args[1]);
     break;
   case "-h":
   case "--help":
