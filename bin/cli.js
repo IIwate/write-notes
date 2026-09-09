@@ -45,8 +45,8 @@ function handleInit(targetDirArg) {
 
 路径格式严格遵循：\`{lifecycle}/{class}/yyyy-mm-dd-topic.md\`
 
-- \`proposed/\`：实施前的提案与权衡，待评审确认。模板见 [templates/proposed.md](templates/proposed.md)。
-- \`implemented/\`：已落地的决策事实，与代码原子提交并就地同步。模板见 [templates/implemented.md](templates/implemented.md)，纪律见 [implemented/AGENTS.md](implemented/AGENTS.md)。
+- \`proposed/\`：仅用于跨轮次/需异步评审的方案与权衡，待评审确认后施工。模板见 [templates/proposed.md](templates/proposed.md)。
+- \`implemented/\`：已落地的决策事实，与代码原子提交并就地同步。单轮闭环任务直接在此以现在时编写。模板见 [templates/implemented.md](templates/implemented.md)，纪律见 [implemented/AGENTS.md](implemented/AGENTS.md)。
 - \`rejected/\`：经讨论否决的方案，永久保留作为防翻案依据。模板见 [templates/rejected.md](templates/rejected.md)。
 - \`archived/\`：已被后续新决策完全取代的历史记录，永久冻结。约束见 [archived/AGENTS.md](archived/AGENTS.md)。
 
@@ -147,10 +147,10 @@ Agent Notes 是由 Agent 编写并维护的持久化架构决策记录（RFC）�
 在进行任何非平凡变更（技术选型、架构重构、接口约定变更、缺陷复盘、特性裁撤）前：
 1. 遵循 [.agents/skills/write-notes/SKILL.md](.agents/skills/write-notes/SKILL.md)。
 2. 既有模块重构优先就地更新对应 Note 的事实部分，严禁只改代码不改 Note，严禁追加流水账。
-3. 新路线先在 \`.agents/notes/proposed/\` 编写提案；交付时随同次代码提交移入 \`implemented/\` 并改写为现在时。
+3. 路径分流：单轮闭环交付（随代码同批合入）直接在 \`.agents/notes/implemented/\` 以现在时编写事实；仅跨会话异步评审/分期立项才走 \`.agents/notes/proposed/\`。
 4. 必须包含 \`## Alternatives considered\` 章节，且必须包含维持现状选项与对手方案的最强论据。
-5. 核心代码入口保留反向追溯注释：\`// Note: 见 .agents/notes/...\`。
-6. Note 中的代码片段与核心类型声明必须通过 \`npm run verify-notes\` 门禁检查。
+5. 源码反向锚点遵循“单一主宿主”原则（类型优先，流程次之，一 Note 一锚点，禁止全库散弹式打标）。
+6. 代码块分级防护：核心契约用 \`type-equiv\`，普通行为逻辑用标准 ts 编译检查，严禁为凑门禁虚构无意义类型。
 `;
 
   const agentsPath = join(targetDir, "AGENTS.md");
