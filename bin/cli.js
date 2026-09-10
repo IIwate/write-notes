@@ -155,35 +155,19 @@ function upgradeGuardrailRules(targetDir) {
   const fileName = relative(targetDir, targetRuleFile) || basename(targetRuleFile);
 
   if (!existsSync(targetRuleFile)) {
-    const initialContent = `${managedBlock}
-
-### 项目专有留痕约束（可选，脚手架不覆盖区）
-<!-- 在此区域添加当前仓库专有的留痕与架构约束，write-notes update 绝不触碰此区域 -->
-`;
-    writeFileSync(targetRuleFile, initialContent, "utf8");
+    writeFileSync(targetRuleFile, managedBlock + "\n", "utf8");
     return { file: fileName, action: "created" };
   }
 
   const existing = readFileSync(targetRuleFile, "utf8");
-
-  // 1. Precise match on sentinel markers (Industrial standard: only touch inside the fence, 0 chars outside)
   const sentinelRegex = new RegExp(`${SENTINEL_START}[\\s\\S]*?${SENTINEL_END}`);
+
   if (sentinelRegex.test(existing)) {
     const updated = existing.replace(sentinelRegex, managedBlock);
     writeFileSync(targetRuleFile, updated, "utf8");
-    return { file: fileName, action: "upgraded (sentinel block)" };
+    return { file: fileName, action: "upgraded" };
   }
 
-  // 2. Safe migration for legacy init without sentinel markers
-  // Strictly bounded to the 6th rule item; NEVER greedy-match to EOF ($), protecting custom user rules!
-  const legacyBlockRegex = /(##\s*架构决策留痕与防撞规范[\s\S]*?6\.\s*[^\n]+)/;
-  if (legacyBlockRegex.test(existing)) {
-    const updated = existing.replace(legacyBlockRegex, managedBlock + "\n");
-    writeFileSync(targetRuleFile, updated, "utf8");
-    return { file: fileName, action: "migrated legacy block to sentinel" };
-  }
-
-  // 3. Fallback: Append sentinel block cleanly at end of file if not present
   const separator = existing.endsWith("\n\n") ? "" : (existing.endsWith("\n") ? "\n" : "\n\n");
   writeFileSync(targetRuleFile, existing + separator + managedBlock + "\n", "utf8");
   return { file: fileName, action: "appended" };
