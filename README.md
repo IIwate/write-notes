@@ -42,6 +42,9 @@
 7. 严格时态隔离
 已实施记录（`implemented/`）强制采用现在时描述客观交付事实，禁止包含计划性或提案性词汇。
 
+8. 受管围栏（Sentinel Markers）与用户定制区隔离
+脚手架在项目规则中采用 `<!-- BEGIN WRITE-NOTES GUARDRAILS -->` 与 `<!-- END WRITE-NOTES GUARDRAILS -->` 建立不可逾越的边界。工具升级与 Agent 维护仅触碰围栏内部，绝不越界修改用户在围栏外增补的项目专属规则。
+
 ---
 
 ## 一键脚手架（在新项目中接入）
@@ -75,7 +78,7 @@ write-notes update
 - 自动升级 `.agents/skills/write-notes/` 下的最新 `SKILL.md` 与参考文档；
 - 自动同步 `scripts/` 下的最新白盒门禁校验脚本与性能优化；
 - 自动同步 `.agents/notes/templates/` 标准化模板；
-- 精准就地升级项目根目录 `AGENTS.md` / `CLAUDE.md` 中的防撞规则区块；
+- 严格遵循显式哨兵围栏（`<!-- BEGIN WRITE-NOTES GUARDRAILS --> ... <!-- END WRITE-NOTES GUARDRAILS -->`），精准就地升级受管规则，围栏外的项目专属定制规则**1 个字符都不碰**；
 - 检查并补齐 `package.json` 的门禁 scripts 与 `tsx` / `typescript` 依赖；
 - 🛡️ **严格安全屏障**：已落地的所有 Note 业务记录（`.agents/notes/{proposed,implemented,rejected,archived}/*`）绝对只读保护，100% 完好未触碰。
 

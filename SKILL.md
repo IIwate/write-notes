@@ -40,6 +40,9 @@ Note 中的代码块实行三级分层防护，严禁为迎合门禁而人为捏
 7. 严格时态隔离
 `implemented/` 下严格使用现在时描述已落地的客观事实，严禁出现 `Proposal`、`Plan`、`Acceptance criteria` 等将来时口吻。行文规范见 [prose-checklist.md](references/prose-checklist.md)。
 
+8. 尊重项目定制与受管围栏隔离
+宿主项目根目录 `AGENTS.md` / `CLAUDE.md` 中的 `<!-- BEGIN WRITE-NOTES GUARDRAILS -->` 至 `<!-- END WRITE-NOTES GUARDRAILS -->` 属于脚手架受管区；围栏之外属于用户与项目的专属领地（如团队定制规则、包管理规范、部署流水线约束等）。Agent 与更新工具严禁改动围栏外的任何内容，严禁将用户定制规则视为“规范漂移”而自作主张抹除。
+
 ## 目录结构
 
 路径格式：`.agents/notes/{lifecycle}/{class}/yyyy-mm-dd-topic.md`

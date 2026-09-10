@@ -22,8 +22,10 @@ const packageRoot = resolve(__dirname, "..");
 const args = process.argv.slice(2);
 const command = args[0] || "help";
 
-const ruleContent = `
-## 架构决策留痕与防撞规范
+const SENTINEL_START = "<!-- BEGIN WRITE-NOTES GUARDRAILS -->";
+const SENTINEL_END = "<!-- END WRITE-NOTES GUARDRAILS -->";
+
+const ruleBody = `## 架构决策留痕与防撞规范（脚手架受管区，请勿手工编辑）
 
 在进行任何非平凡变更（技术选型、架构重构、接口约定变更、缺陷复盘、特性裁撤）前：
 1. 遵循 [.agents/skills/write-notes/SKILL.md](.agents/skills/write-notes/SKILL.md)。
@@ -31,8 +33,16 @@ const ruleContent = `
 3. 路径分流：单轮闭环交付（随代码同批合入）直接在 \`.agents/notes/implemented/\` 以现在时编写事实；仅跨会话异步评审/分期立项才走 \`.agents/notes/proposed/\`。
 4. 必须包含 \`## Alternatives considered\` 章节，且必须包含维持现状选项与对手方案的最强论据。
 5. 源码反向锚点遵循“单一主宿主”原则（类型优先，流程次之，一 Note 一锚点，禁止全库散弹式打标）。
-6. 代码块分级防护：核心契约用 \`type-equiv\`，普通行为逻辑用标准 ts 编译检查，严禁为凑门禁虚构无意义类型。
-`;
+6. 代码块分级防护：核心契约用 \`type-equiv\`，普通行为逻辑用标准 ts 编译检查，严禁为凑门禁虚构无意义类型。`;
+
+const managedBlock = `${SENTINEL_START}
+${ruleBody}
+${SENTINEL_END}`;
+
+function writeSafely(filePath, content) {
+  mkdirSync(dirname(filePath), { recursive: true });
+  writeFileSync(filePath, content, "utf8");
+}
 
 function deployHierarchicalRules(targetDir) {
   const notesReadme = `# Agent Notes
@@ -63,7 +73,7 @@ function deployHierarchicalRules(targetDir) {
 2. 反稻草人备选：每篇 Note 必须包含 ## Alternatives considered 章节。
 3. 门禁验证：提交前必须通过 npm run verify-notes。
 `;
-  writeFileSync(join(targetDir, ".agents", "notes", "README.md"), notesReadme, "utf8");
+  writeSafely(join(targetDir, ".agents", "notes", "README.md"), notesReadme);
 
   const notesAgents = `# AGENTS.md — Agent Notes 治理契约
 
@@ -82,7 +92,7 @@ Agent Notes 是由 Agent 编写并维护的持久化架构决策记录（RFC）�
 3. 严禁改动归档文件
 \`archived/\` 下的文件属于永久冻结的历史快照，绝对不要编辑它们，也不要将其视为当前系统的权威真理。
 `;
-  writeFileSync(join(targetDir, ".agents", "notes", "AGENTS.md"), notesAgents, "utf8");
+  writeSafely(join(targetDir, ".agents", "notes", "AGENTS.md"), notesAgents);
 
   const implementedAgents = `# AGENTS.md — 已交付决策维护纪律（Living Law）
 
@@ -99,7 +109,7 @@ Agent Notes 是由 Agent 编写并维护的持久化架构决策记录（RFC）�
 3. 严格现在时态
 本目录下的文件必须全篇使用现在时陈述客观事实，严禁出现计划态标题（如 ## Proposal、## Plan、## Acceptance criteria）。
 `;
-  writeFileSync(join(targetDir, ".agents", "notes", "implemented", "AGENTS.md"), implementedAgents, "utf8");
+  writeSafely(join(targetDir, ".agents", "notes", "implemented", "AGENTS.md"), implementedAgents);
 
   const archivedAgents = `# AGENTS.md — 归档记录不可篡改契约
 
@@ -111,7 +121,7 @@ Agent Notes 是由 Agent 编写并维护的持久化架构决策记录（RFC）�
 2. 严禁为了“修复死链”或“消除过时 API 报错”而修改已归档的文件。
 3. 归档文件已被计算 SHA-256 哈希值并封印于 manifest.json 中，任何未经授权的修改都会直接导致门禁报错。
 `;
-  writeFileSync(join(targetDir, ".agents", "notes", "archived", "AGENTS.md"), archivedAgents, "utf8");
+  writeSafely(join(targetDir, ".agents", "notes", "archived", "AGENTS.md"), archivedAgents);
 }
 
 function deployTemplates(targetDir) {
@@ -145,25 +155,38 @@ function upgradeGuardrailRules(targetDir) {
   const fileName = relative(targetDir, targetRuleFile) || basename(targetRuleFile);
 
   if (!existsSync(targetRuleFile)) {
-    writeFileSync(targetRuleFile, ruleContent.trimStart(), "utf8");
+    const initialContent = `${managedBlock}
+
+### 项目专有留痕约束（可选，脚手架不覆盖区）
+<!-- 在此区域添加当前仓库专有的留痕与架构约束，write-notes update 绝不触碰此区域 -->
+`;
+    writeFileSync(targetRuleFile, initialContent, "utf8");
     return { file: fileName, action: "created" };
   }
 
   const existing = readFileSync(targetRuleFile, "utf8");
-  const sectionRegex = /##\s*架构决策留痕与防撞规范[\s\S]*?(?=(\n##\s+[^\n]+|\n#[^#\n]+|$))/;
 
-  if (sectionRegex.test(existing)) {
-    const updated = existing.replace(sectionRegex, ruleContent.trim() + "\n");
+  // 1. Precise match on sentinel markers (Industrial standard: only touch inside the fence, 0 chars outside)
+  const sentinelRegex = new RegExp(`${SENTINEL_START}[\\s\\S]*?${SENTINEL_END}`);
+  if (sentinelRegex.test(existing)) {
+    const updated = existing.replace(sentinelRegex, managedBlock);
     writeFileSync(targetRuleFile, updated, "utf8");
-    return { file: fileName, action: "upgraded" };
-  } else if (!existing.includes("write-notes")) {
-    writeFileSync(targetRuleFile, existing.trimEnd() + "\n" + ruleContent, "utf8");
-    return { file: fileName, action: "appended" };
-  } else {
-    // Existing references write-notes but has custom header; append to ensure full coverage
-    writeFileSync(targetRuleFile, existing.trimEnd() + "\n" + ruleContent, "utf8");
-    return { file: fileName, action: "appended" };
+    return { file: fileName, action: "upgraded (sentinel block)" };
   }
+
+  // 2. Safe migration for legacy init without sentinel markers
+  // Strictly bounded to the 6th rule item; NEVER greedy-match to EOF ($), protecting custom user rules!
+  const legacyBlockRegex = /(##\s*架构决策留痕与防撞规范[\s\S]*?6\.\s*[^\n]+)/;
+  if (legacyBlockRegex.test(existing)) {
+    const updated = existing.replace(legacyBlockRegex, managedBlock + "\n");
+    writeFileSync(targetRuleFile, updated, "utf8");
+    return { file: fileName, action: "migrated legacy block to sentinel" };
+  }
+
+  // 3. Fallback: Append sentinel block cleanly at end of file if not present
+  const separator = existing.endsWith("\n\n") ? "" : (existing.endsWith("\n") ? "\n" : "\n\n");
+  writeFileSync(targetRuleFile, existing + separator + managedBlock + "\n", "utf8");
+  return { file: fileName, action: "appended" };
 }
 
 function syncPackageJson(targetDir) {
