@@ -1,7 +1,6 @@
 {
   "name": "write-notes",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "Agent Notes 架构决策记录与门禁规范，面向 AI Agent 与工程团队的决策护栏体系",
   "bin": {
@@ -13,6 +12,29 @@
     "templates",
     "references",
     "SKILL.md"
+  ],
+  "author": "IIwate",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IIwate/write-notes.git"
+  },
+  "homepage": "https://github.com/IIwate/write-notes#readme",
+  "bugs": {
+    "url": "https://github.com/IIwate/write-notes/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "agent",
+    "ai",
+    "adr",
+    "rfc",
+    "guardrails",
+    "notes",
+    "architecture",
+    "cli"
   ],
   "scripts": {
     "verify-notes": "npx tsx scripts/verify-agent-note-tree.ts && npx tsx scripts/verify-agent-note-format.ts && npx tsx scripts/verify-doc-refs.ts && npx tsx scripts/verify-doc-typecheck.ts && npx tsx scripts/verify-type-equiv.ts",

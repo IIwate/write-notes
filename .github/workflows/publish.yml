@@ -1,0 +1,50 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Use Trusted Publishing-compatible npm
+        run: npm install --global npm@11.19.0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check tag version matches package.json
+        run: |
+          node -e '
+            import { readFileSync } from "node:fs";
+            const pkg = JSON.parse(readFileSync("./package.json", "utf8"));
+            const expected = `v${pkg.version}`;
+            if (process.env.GITHUB_REF_NAME !== expected) {
+              console.error(`Tag ${process.env.GITHUB_REF_NAME} does not match expected ${expected}`);
+              process.exit(1);
+            }
+          '
+
+      - name: Run verification gates
+        run: npm run verify-notes
+
+      - name: Verify pack contents
+        run: npm pack --dry-run
+
+      - name: Publish to npm
+        run: npm publish --access public
