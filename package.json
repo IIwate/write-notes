@@ -1,6 +1,6 @@
 {
   "name": "write-notes",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Agent Notes 架构决策记录与门禁规范，面向 AI Agent 与工程团队的决策护栏体系",
   "bin": {
@@ -11,7 +11,8 @@
     "scripts",
     "templates",
     "references",
-    "SKILL.md"
+    "SKILL.md",
+    "LICENSE"
   ],
   "author": "IIwate",
   "license": "MIT",
