@@ -288,7 +288,23 @@ jobs:
   console.log("To archive: npm run archive-note <path-to-note>");
 }
 
-function handleUpdate(targetDirArg) {
+function parseUpdateArgs(cmdArgs) {
+  let targetDir = ".";
+  let updateScripts = false;
+
+  for (const arg of cmdArgs) {
+    if (arg === "--scripts") {
+      updateScripts = true;
+    } else if (!arg.startsWith("-")) {
+      targetDir = arg;
+    }
+  }
+
+  return { targetDir, updateScripts };
+}
+
+function handleUpdate(cmdArgs = []) {
+  const { targetDir: targetDirArg, updateScripts } = parseUpdateArgs(cmdArgs);
   const targetDir = resolve(process.cwd(), targetDirArg || ".");
   const notesDir = join(targetDir, ".agents", "notes");
   const skillDir = join(targetDir, ".agents", "skills", "write-notes");
@@ -309,9 +325,13 @@ function handleUpdate(targetDirArg) {
   deploySkill(targetDir);
   console.log("✓ Updated Agent Skill & references: .agents/skills/write-notes/");
 
-  // 3. Update white-box verification scripts
-  deployScripts(targetDir);
-  console.log("✓ Updated verification scripts: scripts/ (white-box)");
+  // 3. Update white-box verification scripts (only if explicitly requested via --scripts)
+  if (updateScripts) {
+    deployScripts(targetDir);
+    console.log("✓ Overwrote verification scripts with upstream templates: scripts/");
+  } else {
+    console.log("ℹ Preserved project-owned scripts in scripts/ (use --scripts to overwrite)");
+  }
 
   // 4. Update hierarchical context rules
   deployHierarchicalRules(targetDir);
@@ -335,24 +355,27 @@ function showHelp() {
   console.log(`Usage: write-notes <command> [options]
 
 Commands:
-  init [dir]        Scaffold transparent, white-box write-notes into project (default: .)
-  update [dir]      Update skill, templates, scripts and rules (leaves existing notes untouched)
-  help, -h          Show this help manual
+  init [dir]              Scaffold transparent, white-box write-notes into project (default: .)
+  update [dir] [--scripts]
+                          Update skill, templates and rules (preserves project scripts and all notes)
+                          Add --scripts to also overwrite scripts/ with upstream templates
+  help, -h                Show this help manual
 
 Examples:
   write-notes init
   write-notes update
   write-notes update ./my-project
+  write-notes update --scripts
 `);
 }
 
 switch (command) {
   case "init":
-    handleInit(args[1]);
+    handleInit(args.slice(1).find(a => !a.startsWith("-")));
     break;
   case "update":
   case "upgrade":
-    handleUpdate(args[1]);
+    handleUpdate(args.slice(1));
     break;
   case "-h":
   case "--help":

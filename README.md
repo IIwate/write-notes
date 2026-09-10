@@ -72,9 +72,9 @@ write-notes init
 
 ---
 
-## 无损同步更新（在已接入项目中更新规范与门禁）
+## 无损同步更新（在已接入项目中更新规范与模板）
 
-当 `write-notes` 的 Skill 规范、门禁脚本或模板发布了新版本，可在项目根目录下安全升级：
+当 `write-notes` 的 Skill 规范、参考文档或模板发布了新版本，可在项目根目录下安全升级：
 
 ```bash
 write-notes update
@@ -82,11 +82,11 @@ write-notes update
 
 该命令执行**严格无损升级（Non-destructive）**：
 - 自动升级 `.agents/skills/write-notes/` 下的最新 `SKILL.md` 与参考文档；
-- 自动同步 `scripts/` 下的最新白盒门禁校验脚本与性能优化；
 - 自动同步 `.agents/notes/templates/` 标准化模板；
 - 严格遵循显式哨兵围栏（`<!-- BEGIN WRITE-NOTES GUARDRAILS --> ... <!-- END WRITE-NOTES GUARDRAILS -->`），精准就地升级受管规则，围栏外的项目专属定制规则**1 个字符都不碰**；
+- 🛡️ **项目脚本所有权保护**：宿主项目 `scripts/` 下的脚本（包括反向注释与本地微调）默认**完整保留且不予触碰**；仅在显式传入 `--scripts` 参数时才覆写；
 - 检查并补齐 `package.json` 的门禁 scripts 与 `tsx` / `typescript` 依赖；
-- 🛡️ **严格安全屏障**：已落地的所有 Note 业务记录（`.agents/notes/{proposed,implemented,rejected,archived}/*`）绝对只读保护，100% 完好未触碰。
+- 🛡️ **绝对只读屏障**：已落地的所有 Note 业务记录（`.agents/notes/{proposed,implemented,rejected,archived}/*`）100% 完好未触碰。
 
 ---
 
