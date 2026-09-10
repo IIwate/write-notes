@@ -1,186 +1,133 @@
 # write-notes
 
-面向 AI Agent 与工程团队的架构决策治理与防撞护栏体系。设计规范源自 DeepSeek Harness 原生工程实践。
+> 为 AI Coding Agent 与工程团队打造的架构决策留痕与编译级防撞护栏体系。
 
-将代码与常规文档无法承载的技术动机、被否决方案与验证基线同代码原子提交，终结跨会话失忆与破坏性重构。
-
----
-
-## 设计哲学：白盒自包含与零黑盒依赖
-
-与 DeepSeek Harness 的设计完全对齐：
-- **拒绝全局黑盒运行时**：所有门禁校验逻辑（目录树、格式与时态、源码反向死链、代码编译检查、AST 契约等价）均为透明的 TypeScript 脚本，直接归宿主项目自身所有；
-- **掌控权归项目**：项目维护者和 Agent 可以随时查看、审计并按需微调门禁逻辑，不依赖任何第三方不可见二进制；
-- **一键脚手架分发**：彻底免去手动复制目录与修改配置的繁琐操作，一行命令 `write-notes init` 自动完成全套白盒脚本、模板与 CI 的就绪。
+[![npm version](https://img.shields.io/npm/v/write-notes.svg)](https://www.npmjs.com/package/write-notes)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D22-brightgreen)](package.json)
 
 ---
 
-## 核心设计原则
+## 为什么需要 write-notes？
 
-1. 现行法律（Living Law）
-已交付决策随代码共同演进。代码重命名、路径迁移或参数调整时，在同一提交中就地更新对应 Note 事实，不追加流水账式的演化记录。
+在现代 AI 辅助研发中，工程团队往往面临两大核心困境：
 
-2. 决策与代码原子提交
-非平凡变更必须在同一提交或 Pull Request 中包含对 Note 的新增或就地更新。
+1. **AI Agent 的“跨会话失忆”与“盲目重构”**  
+   AI 在接手既有项目时，缺乏对历史技术决策的上下文感知。一些看似“冗余”的代码、防御性的时序处理或参数妥协，背后往往守护着极其隐蔽的 Corner Case 或被证伪的方案。没有护栏约束的 AI 极易开展盲目优化，将历史缺陷改翻盘。
+2. **传统 ADR 与文档的“快速腐烂”**  
+   文档随写随弃、文不对题、代码改了文档未同步；或者在文末追加大量日记式的“修改流水账”，最终沦为无人问津的“文档地质层”。
 
-3. 反向代码锚点与单一主宿主规则
-遵循“单一主宿主（Single Primary Host）”原则，核心模块处保留唯一一行反向注释指回对应的 Note（类型定义优先，流程入口次之，严禁散弹式打标）：
-```ts
-// Note: 见 .agents/notes/implemented/architecture/2026-08-23-sqlite-session-store.md
-```
-门禁工具通过静态分析确保所有反向引用均真实存在，防止事实漂移。
-
-4. 代码块三级分层防护与 AST 契约等价
-架构核心数据结构与 Schema 采用 `type-equiv` 标记由 AST 语法树逐符号镜像比对；纯行为/算法逻辑使用普通代码块参与真实编译器类型检查（严禁为凑门禁虚构类型）；伪代码标记 `ignore-check`。确保架构契约与实现绝对同步且无形式主义负担。
-
-5. 强制反稻草人备选（Anti-Strawman）
-每篇决策记录必须包含对真实替代方案的对比，必须包含维持现状或不做的选项，并陈述对手方案的最强论据。
-
-6. 路径即状态与无中心索引
-依靠扁平分类目录与相对 Markdown 链接建立引用关系，禁止集中式 `INDEX.md`，消除多分支并发合并冲突。
-
-7. 严格时态隔离
-已实施记录（`implemented/`）强制采用现在时描述客观交付事实，禁止包含计划性或提案性词汇。
-
-8. 受管围栏（Sentinel Markers）与用户定制区隔离
-脚手架在项目规则中采用 `<!-- BEGIN WRITE-NOTES GUARDRAILS -->` 与 `<!-- END WRITE-NOTES GUARDRAILS -->` 建立不可逾越的边界。工具升级与 Agent 维护仅触碰围栏内部，绝不越界修改用户在围栏外增补的项目专属规则。
-
-9. 绝对免除边界（严禁为文档建 Note）
-Note 用于固化常规文档无法承载的架构动机与防撞护栏。纯文档修改（README、用户手册、API 文档润色）、代码注释、单测补充、常规依赖升级等，直接提交产物即可，绝不为文档再造元文档。
-
-10. 双层指针宪法架构（Two-Tier Pointer Architecture）
-根目录 `AGENTS.md` 仅沉淀极高密度的系统级不变量（1~3 句话自包含陈述并挂 Note 超链接指针），`.agents/notes/` 承载深层立法理由与被否决备选。模块级局部决策与 Bugfix 严禁随意写入根目录，彻底杜绝全局提示词上下文膨胀。
+**write-notes 的答案：将架构决策定义为与代码共存亡的“现行法律（Living Law）”。**  
+把常规文档和代码注释无法承载的技术动机、被否决方案与测试基线与代码原子提交，并由真实编译器与 AST 语法树提供不可逾越的物理防撞护栏。
 
 ---
 
-## 一键脚手架（在新项目中接入）
+## 核心设计与防撞机制
 
-在新项目根目录下一行命令初始化，自动分发全套白盒资产：
+### 1. 真实编译器检查与 AST 契约镜像（Anti-Corruption）
+- **类型安全代码块**：Note 中的 TypeScript 代码片段默认参与宿主项目的真实编译器类型检查（`tsc`），API 签名过时立刻红灯阻断，彻底杜绝示例代码腐烂；
+- **AST 等价比对（`type-equiv`）**：架构核心数据结构、Schema 与持久化模型采用 AST 逐符号 1:1 镜像核对，源码接口变动而文档未同步时，门禁强行拦截；
+- **防形式主义分层**：算法与行为流转直接使用普通代码块真实编译，严禁为迎合门禁而捏造伪类型。
+
+### 2. 源码入口反向锚点与单一主宿主（Single Primary Host）
+- 关键模块处保留唯一一行物理反向注释：
+  ```ts
+  // Note: 会话持久化采用文件句柄管理，避免并发写冲突 — 见 .agents/notes/implemented/architecture/2026-08-27-handle-based-session-persistence.md
+  export interface SessionFileHandleConfig { ... }
+  ```
+- 门禁脚本静态扫描全库源码注释中的 Note 路径，目标一旦移动或删除，CI 当场报警，根除事实漂移；
+- 遵循单一主宿主原则（数据结构优先，顶层门面次之），杜绝散弹式打标。
+
+### 3. 双层指针宪法架构（Two-Tier Pointer Architecture）
+- **根目录 `AGENTS.md`（高密系统宪法）**：*Keep root rules self-contained in one to three sentences and link their detailed owner.* 仅提炼 1~3 句自包含的不变量断言（Runtime Invariants），并在句末挂 Note 超链接指针；
+- **`.agents/notes/`（立法依据库）**：沉淀深层动机、≥2 个被否决备选方案（Alternatives considered）的最强论据与测试靶场；
+- 模块级局部决策与日常 Bugfix 严禁随意写入根目录，彻底防止全局上下文膨胀与注意力稀释。
+
+### 4. 就地维护事实与严格时态隔离（In-place Fact Sync）
+- 模块重构或参数调整时，在同一提交中**直接就地重写既有 Note 的正文陈述**，严禁在文末追加历史流水账；
+- 已交付决策（`implemented/`）全篇强制使用现在时事实语态，严禁包含计划态或提案口吻；
+- 彻底被取代的决策走 Supersession 协议归档封存（计算 SHA-256 哈希），禁止篡改历史。
+
+### 5. 绝对免除边界（Negative Exemption Boundary）
+- 纯文档修改（README、Wiki、使用指南）、注释微调、单测增补、常规依赖升级及非架构性日常日常修复，**严格免除建 Note**，直接提交代码，杜绝流程异味与泛化滥用。
+
+### 6. 白盒自包含与零黑盒依赖（White-box Scaffolding）
+- 拒绝引入第三方黑盒闭源运行时，门禁脚本（TypeScript）与填空模板透明注入宿主项目；
+- 宿主项目拥有自身门禁脚本的完全控制权，脚手架更新时默认严格保护项目脚本，绝不越界覆写。
+
+---
+
+## 快速上手
+
+### 1. 在项目中接入（零配置安装）
+
+无需克隆本项目，在任何新项目根目录下直接运行：
 
 ```bash
-write-notes init
+npx write-notes init
 ```
 
-该命令将在 1 秒内自动完成：
-- 自动部署门禁脚本到项目自身的 `scripts/` 目录（完全白盒透明，可直接审查与定制）；
-- 自动创建 `.agents/notes/{proposed,implemented,rejected,archived}` 目录树与 6 大封闭分类；
-- 自动部署标准化填空模板到 `.agents/notes/templates/`；
-- 自动安装 Skill 规范到 `.agents/skills/write-notes/`（支持 Pi、Cursor、Claude Code）；
-- 自动在项目的 `AGENTS.md`（或 `CLAUDE.md`）追加防撞护栏约束规则；
-- 自动在项目的 `package.json`（若存在）中注册透明的 `npm run verify-notes` 等原生指令；
-- 自动创建 GitHub Actions 自动化门禁流水线（`.github/workflows/verify-notes.yml`）。
+脚手架将在 1 秒内自动完成：
+- 部署全套透明门禁校验脚本到项目 `scripts/` 目录；
+- 创建 `.agents/notes/{proposed,implemented,rejected,archived}` 标准分类目录树；
+- 部署填空模板到 `.agents/notes/templates/`；
+- 安装面向 AI Agent 的上下文技能规范到 `.agents/skills/write-notes/`；
+- 在项目 `AGENTS.md`（或 `CLAUDE.md`）注入受管防撞提示词围栏；
+- 在 `package.json` 注册原生 `npm run verify-notes` 门禁指令；
+- 配置 GitHub Actions 自动化门禁流水线（`.github/workflows/verify-notes.yml`）。
 
----
+### 2. 日常工作流
 
-## 无损同步更新（在已接入项目中更新规范与模板）
-
-当 `write-notes` 的 Skill 规范、参考文档或模板发布了新版本，可在项目根目录下安全升级：
-
-```bash
-write-notes update
+```text
+遇到重大变更（技术选型 / 核心重构 / 架构补缺）
+   │
+   ├─► 既有模块演化 ────────► 在同一 commit 中就地更新持有该决定的既有 Note 事实
+   │
+   ├─► 单轮闭环交付/缺陷修复 ──► 直接在 .agents/notes/implemented/ 编写现在时事实与代码同批交付
+   │
+   ├─► 跨轮次复杂方案 ──────► 先在 .agents/notes/proposed/ 立项，评审通过后再落盘
+   │
+   └─► 纯文档/日常修复 ─────► 命中绝对免除边界，直接提交，严禁新建 Note！
 ```
 
-该命令执行**严格无损升级（Non-destructive）**：
-- 自动升级 `.agents/skills/write-notes/` 下的最新 `SKILL.md` 与参考文档；
-- 自动同步 `.agents/notes/templates/` 标准化模板；
-- 严格遵循显式哨兵围栏（`<!-- BEGIN WRITE-NOTES GUARDRAILS --> ... <!-- END WRITE-NOTES GUARDRAILS -->`），精准就地升级受管规则，围栏外的项目专属定制规则**1 个字符都不碰**；
-- 🛡️ **项目脚本所有权保护**：宿主项目 `scripts/` 下的脚本（包括反向注释与本地微调）默认**完整保留且不予触碰**；仅在显式传入 `--scripts` 参数时才覆写；
-- 检查并补齐 `package.json` 的门禁 scripts 与 `tsx` / `typescript` 依赖；
-- 🛡️ **绝对只读屏障**：已落地的所有 Note 业务记录（`.agents/notes/{proposed,implemented,rejected,archived}/*`）100% 完好未触碰。
+### 3. 本地门禁校验
 
----
-
-## 宿主项目原生命令（无全局依赖）
-
-初始化后，项目的所有成员和 CI 环境只需使用项目原生的 npm 指令，无需任何全局 CLI 依赖：
+项目开发者与 CI 使用项目自身的原生指令，无需任何全局 CLI 依赖：
 
 ```bash
-# 1. 运行五重全量门禁（目录树 + 格式与时态 + 源码反向死链 + 代码编译检查 + AST 契约等价）
+# 全量五重门禁校验（目录树 + 格式与时态 + 源码反向死链 + 代码块真实编译 + AST 契约等价）
 npm run verify-notes
 
-# 2. 单项门禁校验
-npm run verify-tree
-npm run verify-format
-npm run verify-doc-refs
-npm run verify-typecheck
-npm run verify-type-equiv
-
-# 3. 方案被完全取代时的一键安全归档与哈希封印
+# 历史决策被完全取代时的一键安全归档与哈希封印
 npm run archive-note .agents/notes/implemented/<class>/<filename>.md
 ```
 
----
+### 4. 无损同步最新规范
 
-## 目录结构与生命周期
+当 `write-notes` 发布了新规范、新参考指南或模板时，在宿主项目执行：
 
-路径格式：`.agents/notes/{lifecycle}/{class}/yyyy-mm-dd-topic.md`
-
-```text
-.agents/notes/
-├── proposed/       # 仅用于跨轮次/需异步评审的方案与权衡，待评审确认
-├── implemented/    # 已落地决策事实（单轮闭环直入），与代码原子提交并就地同步
-├── rejected/       # 经讨论否决的方案，保留作为防翻案依据
-└── archived/       # 已被后续新决策完全取代的历史记录，永久冻结
+```bash
+npx write-notes update
 ```
 
-### 6 大分类
-
-- `feature`：面向用户或调用方的新能力及非显式产品选择。
-- `bug-fix`：缺陷修复，或复盘事故补上的架构缺口。
-- `simplification`：只删不增。清理冗余代码、收敛暴露面及无行为变更的重构。
-- `architecture`：交付源码的结构性决策、包间关系与模块边界。
-- `process`：工具链、门禁、构建发布规范（非运行时行为）。
-- `testing`：测试基建、测试分层与验收策略。
+- **严格无损**：自动同步最新 Skill、参考指南与模板，精准就地更新 `AGENTS.md` 围栏；
+- **安全屏障**：已落地的所有 Note 业务记录 100% 只读保护；项目 `scripts/` 下的自有脚本默认完整保留不予触碰。
 
 ---
 
-## 标准 Note 形态
+## 深入指南与技术参考
 
-路径：`.agents/notes/implemented/feature/2026-08-23-sqlite-session-store.md`
+完整规范与技术细节请参阅项目内参考资产：
 
-```markdown
-# Agent Note: 为什么用 SQLite 代替 JSONL 存储会话
-
-Status: implemented
-
-## Problem
-
-现有 JSONL 存储在多进程并发写入时极易锁冲突，且按时间倒序扫描导致端到端延迟常态化突破 800ms。该问题无法通过应用层内存缓存彻底解决，崩溃时存在丢数据风险。
-
-## Decision
-
-会话存储改用 SQLite。启用 WAL 模式保证读写并发，核心表建立 `session_id + timestamp` 联合索引。关键入口由 `StorageEngine` 接口统一定义。
-
-```ts type-equiv: StorageConfig from src/types/storage.ts
-export interface StorageConfig {
-  engine: 'sqlite' | 'memory';
-  wal: boolean;
-  busyTimeoutMs: number;
-}
-```
-
-## Alternatives considered
-
-- **维持 JSONL + 内存倒排索引**：改动成本最低。但异常断电与进程被杀时存在索引与数据文件撕裂风险，且跨进程共享内存机制过于脆弱。
-- **引入外部 PostgreSQL**：查询生态成熟。但本系统为本地 CLI 工具，强制用户安装外部守护进程严重破坏了零配置开箱体验。
-- **不做任何优化（维持现状）**：无法解决并发锁死问题，且破坏了长会话追溯的核心需求。
-
-## Consequences
-
-- **收益**：多进程读写不再争抢，历史记录定位延迟降至 10ms 以内（实测 P99 < 15ms）。
-- **代价与上限**：引入了原生 C 绑定，发布包体积增加约 15MB；单库并发写上限受限于 SQLite 串行写入锁，若未来单节点写 QPS > 500 需重访。
-```
+- [SKILL.md](SKILL.md) — 供 AI Agent 遵照执行的上下文工程规范
+- [何时写、就地改与双层指针架构](references/when-to-write.md) — 决策流转矩阵、反向锚点规则与宪法指针分工
+- [自动化门禁体系技术详解](references/verification.md) — AST 语法树符号对齐与文档类型检查实现
+- [行文去思维链与去流水账清单](references/prose-checklist.md) — 现行法律事实叙述规范
+- [决策归档机制与完全取代协议](references/archiving.md) — 决策演进闭环与不可变哈希封印
+- [架构分类判定界限](references/classification.md) — 6 大封闭类别界定标准
 
 ---
-
-## 资产说明
-
-- `bin/cli.js`：轻量脚手架分发器（`write-notes init`）。
-- `SKILL.md`：供 AI Agent 遵照执行的上下文工作流规范。
-- `templates/`：标准化 Markdown 填空模板（`proposed.md`、`implemented.md`、`rejected.md`）。
-- `scripts/`：分发至宿主项目的全套白盒门禁与归档脚本源码。
-- `references/`：分类界限、行文约束、质量自检、归档机制与门禁技术参考。
 
 ## 许可证
 
-MIT
+MIT © [IIwate](https://github.com/IIwate)
