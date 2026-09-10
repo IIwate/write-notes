@@ -27,13 +27,14 @@ const SENTINEL_END = "<!-- END WRITE-NOTES GUARDRAILS -->";
 
 const ruleBody = `## 架构决策留痕与防撞规范（脚手架受管区，请勿手工编辑）
 
-在进行任何非平凡变更（技术选型、架构重构、接口约定变更、缺陷复盘、特性裁撤）前：
+在进行涉及系统设计决策与架构基线的非平凡变更（技术选型、核心模块重构、破坏性接口变更、系统级缺陷复盘、特性裁撤）前：
 1. 遵循 [.agents/skills/write-notes/SKILL.md](.agents/skills/write-notes/SKILL.md)。
 2. 既有模块重构优先就地更新对应 Note 的事实部分，严禁只改代码不改 Note，严禁追加流水账。
 3. 路径分流：单轮闭环交付（随代码同批合入）直接在 \`.agents/notes/implemented/\` 以现在时编写事实；仅跨会话异步评审/分期立项才走 \`.agents/notes/proposed/\`。
 4. 必须包含 \`## Alternatives considered\` 章节，且必须包含维持现状选项与对手方案的最强论据。
 5. 源码反向锚点遵循“单一主宿主”原则（类型优先，流程次之，一 Note 一锚点，禁止全库散弹式打标）。
-6. 代码块分级防护：核心契约用 \`type-equiv\`，普通行为逻辑用标准 ts 编译检查，严禁为凑门禁虚构无意义类型。`;
+6. 代码块分级防护：核心契约用 \`type-equiv\`，普通行为逻辑用标准 ts 编译检查，严禁为凑门禁虚构无意义类型。
+7. 免除范围（严禁建 Note）：纯文档修改（README/Wiki/使用指南/API 文档）、注释调整、单测增补、常规依赖升级与非架构性日常日常修复，直接提交即可，严禁新建任何 Note。`;
 
 const managedBlock = `${SENTINEL_START}
 ${ruleBody}
