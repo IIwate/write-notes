@@ -22,9 +22,7 @@ jobs:
         run: npm ci || npm install
 
       - name: Run verification gates
-        run: |
-          npx tsx scripts/verify-agent-note-tree.ts
-          npx tsx scripts/verify-agent-note-format.ts
-          npx tsx scripts/verify-doc-refs.ts
-          npx tsx scripts/verify-doc-typecheck.ts
-          npx tsx scripts/verify-type-equiv.ts
+        run: npm run verify-notes
+
+      - name: Test archive and scaffolding workflows
+        run: npm test

@@ -17,8 +17,9 @@ Modern AI-assisted software engineering faces two critical failure modes:
 2. **Traditional ADR & Documentation Rot**  
    Documentation quickly drifts out of sync with code. Teams either abandon updating documentation altogether or append endless diary-like changelogs, leaving behind an untrusted "documentation graveyard".
 
-**The write-notes approach: Architectural decisions as "Living Law".**  
-Motivations, rejected alternatives, and verification baselines that code comments cannot carry are committed atomically alongside code changes—enforced by real compiler typechecks, AST equivalence, and static link validation.
+**The write-notes approach: Decisions with explicit assumptions and evidence.**
+
+Keep motivations, alternatives, and verification boundaries beside the code. Revisit a decision when requirements or evidence change its assumptions. Compiler checks, AST comparison, and link validation check mechanical consistency; architectural reasoning remains a maintenance responsibility.
 
 ---
 
@@ -36,7 +37,7 @@ Motivations, rejected alternatives, and verification baselines that code comment
   export interface SessionFileHandleConfig { ... }
   ```
 - Static analysis scans all codebase comments for referenced note paths. Any renamed or deleted note immediately fails CI;
-- **Single Primary Host**: Anchors attach to the core type definition first, or the top-level facade entrypoint second. Scatter-gun commenting across entire PRs is prohibited.
+- **Single Primary Host**: Anchor a note at its core type or top-level entrypoint. Path validation does not enforce anchor uniqueness or prove that the note's prose is correct.
 
 ### 3. Two-Tier Pointer Architecture
 - **Root `AGENTS.md` (High-density System Constitution)**: *Keep root rules self-contained in one to three sentences and link their detailed owner.* Only system-wide runtime invariants are declared here, with hyperlinks to their respective notes;
@@ -46,7 +47,8 @@ Motivations, rejected alternatives, and verification baselines that code comment
 ### 4. In-place Fact Maintenance & Strict Tense Isolation
 - When modules evolve, **directly rewrite existing active notes in-place** within the same commit. Appending chronological changelogs is strictly forbidden;
 - Implemented notes use strictly present-tense facts (`implemented/`), banning proposal language (`## Proposal`, `## Plan`);
-- Completely superseded decisions are permanently frozen in `archived/` with SHA-256 integrity hashes.
+- Archive preview resolves references before moving a decision. Replacement metadata links old and new decisions in both directions;
+- Archived files registered in the manifest are checked against their SHA-256 hashes. Historical links and APIs are excluded from current-contract checks.
 
 ### 5. Negative Exemption Boundaries
 - Pure documentation edits (README, guides, API descriptions), comment tuning, test additions, routine dependency bumps, and non-architectural bugfixes are **explicitly exempt from creating notes**. Commit directly without ceremony.
@@ -67,7 +69,7 @@ Run directly in any project root without cloning this repository:
 npx write-notes init
 ```
 
-In under one second, the CLI automatically:
+The CLI:
 - Deploys transparent TypeScript verification scripts to `scripts/`;
 - Scaffolds the `.agents/notes/{proposed,implemented,rejected,archived}` directory tree;
 - Places fill-in templates in `.agents/notes/templates/`;
@@ -95,11 +97,18 @@ Significant Change (Architecture / Core Refactor / Defect Post-mortem)
 Run native project scripts without global CLI dependencies:
 
 ```bash
-# Run 5-stage verification (directory tree + format + dead doc-refs + typecheck + AST equiv)
+# Check tree, format, source references, snippets, AST contracts, and archive seals
 npm run verify-notes
 
-# Safely archive and hash-seal a superseded decision
-npm run archive-note .agents/notes/implemented/<class>/<filename>.md
+# Inspect incoming and outgoing references without creating an index
+npm run note-refs -- <note-or-source-path>
+
+# Preview a decision replacement without changing files
+npm run archive-note -- <old-note> --replacement <new-note> --dry-run
+
+# Apply the previewed operation, then verify it
+npm run archive-note -- <old-note> --replacement <new-note>
+npm run verify-notes
 ```
 
 ### 4. Non-destructive Updates
@@ -111,7 +120,9 @@ npx write-notes update
 ```
 
 - **Non-destructive**: Syncs skills, references, templates, and updates the sentinel block in `AGENTS.md`;
-- **Safe boundary**: Existing note records are 100% untouched. Scripts in `scripts/` are preserved (use `--scripts` to overwrite).
+- **Safe boundary**: Existing note records, root rules outside the managed block, project scripts, and existing package commands are preserved. Use `--scripts` to replace the bundled scripts and update their commands, including the archive seal gate.
+
+Archive operations rebase Markdown links and update source Note paths. A caught write failure attempts rollback; process termination and concurrent editing are not covered by a cross-file transaction. See the [archiving guide](references/archiving.md) for the exact scope. Archive operations should run sequentially.
 
 ---
 

@@ -34,7 +34,8 @@ const ruleBody = `## 架构决策留痕与防撞规范（脚手架受管区，�
 4. 必须包含 \`## Alternatives considered\` 章节，且必须包含维持现状选项与对手方案的最强论据。
 5. 源码反向锚点遵循“单一主宿主”原则（类型优先，流程次之，一 Note 一锚点，禁止全库散弹式打标）。
 6. 代码块分级防护：核心契约用 \`type-equiv\`，普通行为逻辑用标准 ts 编译检查，严禁为凑门禁虚构无意义类型。
-7. 免除范围（严禁建 Note）：纯文档修改（README/Wiki/使用指南/API 文档）、注释调整、单测增补、常规依赖升级与非架构性日常日常修复，直接提交即可，严禁新建任何 Note。`;
+7. 免除范围（严禁建 Note）：纯文档修改（README/Wiki/使用指南/API 文档）、注释调整、单测增补、常规依赖升级与非架构性日常修复。是否提交遵循当前任务授权。
+8. Note 记录决定及其成立前提。新需求或实测改变前提时重新评估；既有 Note 不替代用户目标，也不自动增加确认流程。`;
 
 const managedBlock = `${SENTINEL_START}
 ${ruleBody}
@@ -87,7 +88,7 @@ Agent Notes 是由 Agent 编写并维护的持久化架构决策记录（RFC）�
 - 若完全取代老方案：将旧 Note 的有效价值吸收进新 Note，老 Note 依据 [archived/AGENTS.md](archived/AGENTS.md) 规则移入 \`archived/\` 并在同一提交中修复所有入站相对链接。
 - 若部分取代老方案：保持两篇 Note 处于活跃状态并在正文中添加双向相对链接。
 
-2. 现行法律与事实同步
+2. 当前决定与事实同步
 对既有决策的维护严格遵循 [implemented/AGENTS.md](implemented/AGENTS.md) 的就地更新纪律。
 
 3. 严禁改动归档文件
@@ -95,9 +96,9 @@ Agent Notes 是由 Agent 编写并维护的持久化架构决策记录（RFC）�
 `;
   writeSafely(join(targetDir, ".agents", "notes", "AGENTS.md"), notesAgents);
 
-  const implementedAgents = `# AGENTS.md — 已交付决策维护纪律（Living Law）
+  const implementedAgents = `# AGENTS.md — 已交付决策维护纪律
 
-本目录下的 Note 记录了已落地的客观架构决策。
+本目录下的 Note 记录当前实现的决定、适用前提与验证边界。新的需求和实测可以改变这些前提；按任务授权重新判断并同步记录。
 
 ## 保持 Note 与实际交付的代码绝对同步
 
@@ -105,7 +106,7 @@ Agent Notes 是由 Agent 编写并维护的持久化架构决策记录（RFC）�
 当后续重构导致文件移动、包重命名、符号改变或默认参数调整时，必须在同一个变更中直接就地更新持有该决定的既有 Note。直接重写正文中陈述的事实，绝对不要在文末追加修改历史流水账。
 
 2. 严禁借更新之名改写决策
-就地更新仅限于事实落地形态的维护。若技术选型或架构原则被推翻，必须新建 Note 并互加双向链接；旧 Note 走归档或完全取代流程。
+同一决定的落地形态就地维护。决定被替代时新建 Note；完全取代使用 archive-note 的 --replacement 生成双向关系，部分取代保留双方并明确各自范围。
 
 3. 严格现在时态
 本目录下的文件必须全篇使用现在时陈述客观事实，严禁出现计划态标题（如 ## Proposal、## Plan、## Acceptance criteria）。
@@ -118,9 +119,9 @@ Agent Notes 是由 Agent 编写并维护的持久化架构决策记录（RFC）�
 
 ## 不可侵犯禁令
 
-1. 严禁编辑、重写、翻译、重新排版、移动或删除任何已归档的 Note。
-2. 严禁为了“修复死链”或“消除过时 API 报错”而修改已归档的文件。
-3. 归档文件已被计算 SHA-256 哈希值并封印于 manifest.json 中，任何未经授权的修改都会直接导致门禁报错。
+1. 归档工具在封印前整理相对链接、归档日期和替代关系。已完成归档的历史正文保持冻结，不按当前代码重写。
+2. 历史链接和旧 API 不参与当前语义、格式或代码块检查。
+3. archive-note 将完成归档的文件登记到 manifest.json。已接入 verify-archives 时，门禁校验登记文件的内容哈希；未登记的历史文件不具有这项自动保证。
 `;
   writeSafely(join(targetDir, ".agents", "notes", "archived", "AGENTS.md"), archivedAgents);
 }
@@ -174,7 +175,7 @@ function upgradeGuardrailRules(targetDir) {
   return { file: fileName, action: "appended" };
 }
 
-function syncPackageJson(targetDir) {
+function syncPackageJson(targetDir, overwriteScripts = false) {
   const pkgPath = join(targetDir, "package.json");
   if (!existsSync(pkgPath)) return false;
 
@@ -183,13 +184,26 @@ function syncPackageJson(targetDir) {
     pkg.scripts = pkg.scripts || {};
     pkg.devDependencies = pkg.devDependencies || {};
 
-    pkg.scripts["verify-notes"] = "npx tsx scripts/verify-agent-note-tree.ts && npx tsx scripts/verify-agent-note-format.ts && npx tsx scripts/verify-doc-refs.ts && npx tsx scripts/verify-doc-typecheck.ts && npx tsx scripts/verify-type-equiv.ts";
-    pkg.scripts["verify-tree"] = "npx tsx scripts/verify-agent-note-tree.ts";
-    pkg.scripts["verify-format"] = "npx tsx scripts/verify-agent-note-format.ts";
-    pkg.scripts["verify-doc-refs"] = "npx tsx scripts/verify-doc-refs.ts";
-    pkg.scripts["verify-typecheck"] = "npx tsx scripts/verify-doc-typecheck.ts";
-    pkg.scripts["verify-type-equiv"] = "npx tsx scripts/verify-type-equiv.ts";
-    pkg.scripts["archive-note"] = "npx tsx scripts/archive-agent-note.ts";
+    const scriptFiles = {
+      "verify-tree": "verify-agent-note-tree.ts",
+      "verify-format": "verify-agent-note-format.ts",
+      "verify-doc-refs": "verify-doc-refs.ts",
+      "verify-typecheck": "verify-doc-typecheck.ts",
+      "verify-type-equiv": "verify-type-equiv.ts",
+      "verify-archives": "verify-archived-notes.ts",
+      "archive-note": "archive-agent-note.ts",
+      "note-refs": "note-references.ts",
+    };
+    const gates = [];
+    for (const [name, file] of Object.entries(scriptFiles)) {
+      if (!existsSync(join(targetDir, "scripts", file))) continue;
+      const command = `npx tsx scripts/${file}`;
+      if (overwriteScripts || !Object.hasOwn(pkg.scripts, name)) pkg.scripts[name] = command;
+      if (name.startsWith("verify-")) gates.push(command);
+    }
+    if (gates.length && (overwriteScripts || !Object.hasOwn(pkg.scripts, "verify-notes"))) {
+      pkg.scripts["verify-notes"] = gates.join(" && ");
+    }
 
     if (!pkg.devDependencies["tsx"]) {
       pkg.devDependencies["tsx"] = "^4.19.0";
@@ -285,7 +299,7 @@ jobs:
   console.log("\nInitialization complete. All gates and context rules are transparently embedded in your project.");
   console.log("To verify: npm run verify-notes");
   console.log("To update skill/scripts in future: write-notes update [dir]");
-  console.log("To archive: npm run archive-note <path-to-note>");
+  console.log("To preview an archive: npm run archive-note -- <path-to-note> --replacement <new-note> --dry-run");
 }
 
 function parseUpdateArgs(cmdArgs) {
@@ -342,9 +356,9 @@ function handleUpdate(cmdArgs = []) {
   console.log(`✓ Upgraded guardrail rules in: ${ruleResult.file}`);
 
   // 6. Synchronize package.json scripts and dependencies
-  const pkgUpdated = syncPackageJson(targetDir);
+  const pkgUpdated = syncPackageJson(targetDir, updateScripts);
   if (pkgUpdated) {
-    console.log("✓ Synchronized package.json scripts and dependencies");
+    console.log(updateScripts ? "✓ Updated script commands and dependencies" : "✓ Preserved existing commands; added missing commands for installed scripts");
   }
 
   console.log("\nUpdate complete. All existing Note records (.agents/notes/{proposed,implemented,rejected,archived}/*) remain 100% untouched.");
