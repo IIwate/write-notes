@@ -43,6 +43,9 @@ jobs:
       - name: Run verification gates
         run: npm run verify-notes
 
+      - name: Run tests
+        run: npm test
+
       - name: Verify pack contents
         run: npm pack --dry-run
 
